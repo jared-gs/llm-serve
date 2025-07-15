@@ -1,15 +1,29 @@
-# Use a slim Python image to keep the container size small
+# Builder stage: use Hugging Face image and run our script
+FROM huggingface/downloader:0.17.3 AS download
+
+ARG HF_TOKEN
+ENV HF_TOKEN=${HF_TOKEN} \
+    HF_HOME=/opt/hf-cache \
+    TRANSFORMERS_CACHE=/opt/hf-cache
+
+# Copy and run the download script
+COPY download_models.sh /tmp/download_models.sh
+RUN apk add bash && /tmp/download_models.sh
+
+# Runtime stage: image + baked cache
 FROM python:3.10-slim
 
-# Set the working directory
-WORKDIR /app
-
-# Install gcloud CLI
+# ---- gcloud SDK (unchanged) ----
 RUN apt-get update && apt-get install -y curl gnupg dnsutils \
   && echo "deb [signed-by=/usr/share/keyrings/cloud.google.gpg] http://packages.cloud.google.com/apt cloud-sdk main" | tee -a /etc/apt/sources.list.d/google-cloud-sdk.list \
   && curl https://packages.cloud.google.com/apt/doc/apt-key.gpg | apt-key --keyring /usr/share/keyrings/cloud.google.gpg add - \
   && apt-get update && apt-get install -y google-cloud-sdk \
   && apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# copy models 
+COPY --from=download /opt/hf-cache /opt/hf-cache
+
+WORKDIR /app
 
 # Copy and install requirements
 COPY requirements.txt .
@@ -22,8 +36,11 @@ COPY main.py .
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh
 
+
+ENV HF_HOME=/opt/hf-cache
+ENV TRANSFORMERS_CACHE=/opt/hf-cache
+ENV TRANSFORMERS_OFFLINE=1
+
 # Expose the port the app runs on
 EXPOSE 8000
-
-# Use entrypoint script
 ENTRYPOINT ["/entrypoint.sh"]
