@@ -2,9 +2,8 @@
 FROM huggingface/downloader:0.17.3 AS download
 
 ARG HF_TOKEN
-ENV HF_TOKEN=${HF_TOKEN} \
-    HF_HOME=/opt/hf-cache \
-    TRANSFORMERS_CACHE=/opt/hf-cache
+ENV HF_HOME=/opt/hf-cache
+ENV TRANSFORMERS_CACHE=/opt/hf-cache
 
 # Copy and run the download script
 COPY download_models.sh /tmp/download_models.sh
