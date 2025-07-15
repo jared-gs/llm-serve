@@ -1,7 +1,8 @@
-# Builder stage: use Hugging Face image and run our script
+# Builder stage: use Hugging Face image and run script to download models
 FROM huggingface/downloader:0.17.3 AS download
 
 ARG HF_TOKEN
+ENV HF_TOKEN=${HF_TOKEN:-}
 ENV HF_HOME=/opt/hf-cache
 ENV TRANSFORMERS_CACHE=/opt/hf-cache
 
@@ -38,6 +39,7 @@ RUN chmod +x /entrypoint.sh
 
 ENV HF_HOME=/opt/hf-cache
 ENV TRANSFORMERS_CACHE=/opt/hf-cache
+# Force transformers to use the local cache
 ENV TRANSFORMERS_OFFLINE=1
 
 # Expose the port the app runs on
